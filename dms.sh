@@ -150,7 +150,7 @@ function install_fail2ban() {
 # 11. Instalar, Configurar y Optimizar MySQL
 function install_mysql() {
     write_title "11. Instalar MySQL"
-    apt-get install mysql-server
+    apt-get install mysql-server php5-mysql
     echo -n " configurando MySQL............ "
     cp templates/mysql /etc/mysql/my.cnf; echo " OK"
     mysql_secure_installation

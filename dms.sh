@@ -1,8 +1,10 @@
 #!/bin/bash
 
-# JackTheStripper v2.0
+# JackTheStripper v3.0
 # Deployer for Ubuntu Server 12.04 LTS
 # 
+#   Modificado por Rodrigo Satch me@rockdrigo.info
+#
 # @license      http://www.gnu.org/licenses/gpl.txt  GNU GPL 3.0
 # @author       Eugenia Bahit <eugenia@linux.com>
 # @link         http://www.eugeniabahit.com/proyectos/jackthestripper
@@ -54,8 +56,12 @@ function set_hour() {
 #  3. Actualizar el sistema
 function sysupdate() {
     write_title "3. Actualización del sistema"
-    apt-get update
-    apt-get upgrade -y
+    echo -n " ¿Desea actualizar el sistema? (y/n): "; read update_sys
+    if [ "$update_sys" == "y" ]; then
+        apt-get update
+        apt-get upgrade -y
+        say_done
+    fi
     say_done
 }
 
@@ -77,6 +83,7 @@ function give_instructions() {
     echo " *** SI NO TIENE UNA LLAVE RSA PÚBLICA EN SU ORDENADOR, GENERE UNA ***"
     echo "     Siga las instrucciones y pulse INTRO cada vez que termine una"
     echo "     tarea para recibir una nueva instrucción"
+    echo "     TODO ESTO SE HACE DESDE OTRA SESION!  NO CERRAR ESTA VENTANA!!"
     echo " "
     echo "     EJECUTE LOS SIGUIENTES COMANDOS:"
     echo -n "     a) ssh-keygen "; read foo1
@@ -88,11 +95,14 @@ function give_instructions() {
 #  6. Mover la llave pública RSA generada
 function move_rsa() {
     write_title "6. Se moverá la llave pública RSA generada en el paso 5"
-    mkdir /home/$username/.ssh
-    mv /home/$username/id_rsa.pub /home/$username/.ssh/authorized_keys
-    chmod 700 /home/$username/.ssh
-    chmod 600 /home/$username/.ssh/authorized_keys
-    chown -R $username:$username /home/$username/.ssh
+    echo -n " ¿Deseas mover la llave automaticamente? (y/n): "; read move_key
+    if [ "$move_key" == "y" ]; then
+        mkdir /home/$username/.ssh
+        mv /home/$username/id_rsa.pub /home/$username/.ssh/authorized_keys
+        chmod 700 /home/$username/.ssh
+        chmod 600 /home/$username/.ssh/authorized_keys
+        chown -R $username:$username /home/$username/.ssh
+    fi
     say_done
 }
 
@@ -107,21 +117,21 @@ function ssh_reconfigure() {
 
 
 #  8. Establecer reglas para iptables
-function set_iptables_rules() {
-    write_title "8. Establecer reglas para iptables (firewall)"
-    cat templates/iptables > /etc/iptables.firewall.rules
-    iptables-restore < /etc/iptables.firewall.rules
-    say_done
-}
+# function set_iptables_rules() {
+#     write_title "8. Establecer reglas para iptables (firewall)"
+#     cat templates/iptables > /etc/iptables.firewall.rules
+#     iptables-restore < /etc/iptables.firewall.rules
+#     say_done
+# }
 
 
 #  9. Crear script de automatizacion iptables
-function create_iptable_script() {
-    write_title "9. Crear script de automatización de reglas de iptables tras reinicio"
-    cat templates/firewall > /etc/network/if-pre-up.d/firewall
-    chmod +x /etc/network/if-pre-up.d/firewall
-    say_done
-}
+# function create_iptable_script() {
+#     write_title "9. Crear script de automatización de reglas de iptables tras reinicio"
+#     cat templates/firewall > /etc/network/if-pre-up.d/firewall
+#     chmod +x /etc/network/if-pre-up.d/firewall
+#     say_done
+# }
 
 
 # 10. Instalar fail2ban
@@ -129,6 +139,8 @@ function install_fail2ban() {
     # para eliminar una regla de fail2ban en iptables utilizar:
     # iptables -D fail2ban-ssh -s IP -j DROP
     write_title "10. Instalar Sendmail y fail2ban"
+    echo -n " ¿Quieres instalarlos? (y/n): "; read install_yep
+    if [ "$install_yep" == "y" ]; then
     apt-get install sendmail
     apt-get install fail2ban
     say_done
@@ -148,111 +160,113 @@ function install_mysql() {
 
 
 # 12. Instalar, configurar y optimizar PHP
-function install_php() {
-    write_title "12. Instalar PHP 5 + Apache 2"
-    apt-get install php5 php5-cli php-pear php5-suhosin
-    apt-get install php5-mysql python-mysqldb
-    echo -n " reemplazando archivo de configuración php.ini..."
-    cp templates/php /etc/php5/apache2/php.ini; echo " OK"
-    service apache2 restart
-    mkdir /srv/websites
-    chown -R $username:$username /srv/websites
-    write_title "Aloje sus WebApps en el directorio /srv/websites"
-    echo -n "Si desea alojar sus aplicaciones en otro directorio, por favor, "
-    echo -n "establezca la nueva ruta en la directiva open_base del archivo "
-    echo "/etc/php5/apache2/php.ini"
-    say_done
-}
+# function install_php() {
+#     write_title "12. Instalar PHP 5 + Apache 2"
+#     apt-get install php5 php5-cli php-pear php5-suhosin
+#     apt-get install php5-mysql python-mysqldb
+#     echo -n " reemplazando archivo de configuración php.ini..."
+#     cp templates/php /etc/php5/apache2/php.ini; echo " OK"
+#     service apache2 restart
+#     mkdir /srv/websites
+#     chown -R $username:$username /srv/websites
+#     write_title "Aloje sus WebApps en el directorio /srv/websites"
+#     echo -n "Si desea alojar sus aplicaciones en otro directorio, por favor, "
+#     echo -n "establezca la nueva ruta en la directiva open_base del archivo "
+#     echo "/etc/php5/apache2/php.ini"
+#     say_done
+# }
 
 
 # 13. Instalar ModSecurity
-function install_modsecurity() {
-    write_title "13. Instalar ModSecurity"
-    apt-get install libxml2 libxml2-dev libxml2-utils
-    apt-get install libaprutil1 libaprutil1-dev
-    apt-get install libapache-mod-security
+# function install_modsecurity() {
+#     write_title "13. Instalar ModSecurity"
+#     apt-get install libxml2 libxml2-dev libxml2-utils
+#     apt-get install libaprutil1 libaprutil1-dev
+#     apt-get install libapache-mod-security
 
-    service apache2 restart
-    say_done
-}
+#     service apache2 restart
+#     say_done
+# }
 
 
 # 14. Instalar OWASP para ModSecuity
-function install_owasp_core_rule_set() {
-    write_title "14. Instalar OWASP ModSecurity Core Rule Set"
+# function install_owasp_core_rule_set() {
+#     write_title "14. Instalar OWASP ModSecurity Core Rule Set"
 
-    echo -n " descargar........................................................ "
-    uri_part1='http://pkgs.fedoraproject.org/repo/pkgs/mod_security_crs/'
-    uri_part2='modsecurity-crs_2.2.5.tar.gz'
-    uri_part3='aaeaa1124e8efc39eeb064fb47cfc0aa/modsecurity-crs_2.2.5.tar.gz'
-    wget $uri_part1/$uri_part2/$uri_part3; echo "OK"
+#     echo -n " descargar........................................................ "
+#     uri_part1='http://pkgs.fedoraproject.org/repo/pkgs/mod_security_crs/'
+#     uri_part2='modsecurity-crs_2.2.5.tar.gz'
+#     uri_part3='aaeaa1124e8efc39eeb064fb47cfc0aa/modsecurity-crs_2.2.5.tar.gz'
+#     wget $uri_part1/$uri_part2/$uri_part3; echo "OK"
 
-    echo -n " desempaquetar.................................................... "
-    tar -xzf modsecurity-crs_2.2.5.tar.gz; echo "OK"
+#     echo -n " desempaquetar.................................................... "
+#     tar -xzf modsecurity-crs_2.2.5.tar.gz; echo "OK"
 
-    echo -n " mover............................................................ "
-    cp -R modsecurity-crs_2.2.5/* /etc/modsecurity/; echo "OK"
+#     echo -n " mover............................................................ "
+#     cp -R modsecurity-crs_2.2.5/* /etc/modsecurity/; echo "OK"
 
-    echo -n " eliminar archivos temporales..................................... "
-    rm modsecurity-crs_2.2.5.tar.gz
-    rm -R modsecurity-crs_2.2.5; echo "OK"
+#     echo -n " eliminar archivos temporales..................................... "
+#     rm modsecurity-crs_2.2.5.tar.gz
+#     rm -R modsecurity-crs_2.2.5; echo "OK"
 
-    echo -n " configurar....................................................... "
-    from_path="/etc/modsecurity/modsecurity_crs_10_setup.conf.example"
-    to_path="/etc/modsecurity/modsecurity_crs_10_setup.conf"
-    mv $from_path $to_path
+#     echo -n " configurar....................................................... "
+#     from_path="/etc/modsecurity/modsecurity_crs_10_setup.conf.example"
+#     to_path="/etc/modsecurity/modsecurity_crs_10_setup.conf"
+#     mv $from_path $to_path
 
-    for archivo in /etc/modsecurity/base_rules/*
-        do ln -s $archivo /etc/modsecurity/activated_rules/
-    done
+#     for archivo in /etc/modsecurity/base_rules/*
+#         do ln -s $archivo /etc/modsecurity/activated_rules/
+#     done
 
-    for archivo in /etc/modsecurity/optional_rules/*
-        do ln -s $archivo /etc/modsecurity/activated_rules/
-    done
-    echo "OK"
+#     for archivo in /etc/modsecurity/optional_rules/*
+#         do ln -s $archivo /etc/modsecurity/activated_rules/
+#     done
+#     echo "OK"
 
-    sed s/SecRuleEngine\ DetectionOnly/SecRuleEngine\ On/g /etc/modsecurity/modsecurity.conf-recommended > salida
-    mv salida /etc/modsecurity/modsecurity.conf
+#     sed s/SecRuleEngine\ DetectionOnly/SecRuleEngine\ On/g /etc/modsecurity/modsecurity.conf-recommended > salida
+#     mv salida /etc/modsecurity/modsecurity.conf
     
-    echo 'SecServerSignature "AntiChino Server 1.0.4 LS"' >> /etc/modsecurity/modsecurity_crs_10_setup.conf
-    echo 'Header set X-Powered-By "Plankalkül 1.0"' >> /etc/modsecurity/modsecurity_crs_10_setup.conf
-    echo 'Header set X-Mamma "Mama mia let me go"' >> /etc/modsecurity/modsecurity_crs_10_setup.conf
+#     echo 'SecServerSignature "AntiChino Server 1.0.4 LS"' >> /etc/modsecurity/modsecurity_crs_10_setup.conf
+#     echo 'Header set X-Powered-By "Plankalkül 1.0"' >> /etc/modsecurity/modsecurity_crs_10_setup.conf
+#     echo 'Header set X-Mamma "Mama mia let me go"' >> /etc/modsecurity/modsecurity_crs_10_setup.conf
 
-    a2enmod headers
-    a2enmod mod-security
-    service apache2 restart
-    say_done
-}
+#     a2enmod headers
+#     a2enmod mod-security
+#     service apache2 restart
+#     say_done
+# }
 
 
 # 15. Configurar y optimizar Apache
-function configure_apache() {
-    write_title "15. Finalizar configuración y optimización de Apache"
-    cp templates/apache /etc/apache2/apache2.conf
-    echo " -- habilitar ModRewrite"
-    a2enmod rewrite
-    service apache2 restart
-    say_done
-}
+# function configure_apache() {
+#     write_title "15. Finalizar configuración y optimización de Apache"
+#     cp templates/apache /etc/apache2/apache2.conf
+#     echo " -- habilitar ModRewrite"
+#     a2enmod rewrite
+#     service apache2 restart
+#     say_done
+# }
 
 
 # 16. Instalar ModEvasive
-function install_modevasive() {
-    write_title "16. Instalar ModEvasive"
-    echo -n " Indique e-mail para recibir alertas: "; read inbox
-    apt-get install libapache2-mod-evasive
-    mkdir /var/log/mod_evasive
-    chown www-data:www-data /var/log/mod_evasive/
-    sed s/MAILTO/$inbox/g templates/mod-evasive > /etc/apache2/mods-available/mod-evasive.conf
-    a2enmod mod-evasive
-    service apache2 restart
-    say_done
-}
+# function install_modevasive() {
+#     write_title "16. Instalar ModEvasive"
+#     echo -n " Indique e-mail para recibir alertas: "; read inbox
+#     apt-get install libapache2-mod-evasive
+#     mkdir /var/log/mod_evasive
+#     chown www-data:www-data /var/log/mod_evasive/
+#     sed s/MAILTO/$inbox/g templates/mod-evasive > /etc/apache2/mods-available/mod-evasive.conf
+#     a2enmod mod-evasive
+#     service apache2 restart
+#     say_done
+# }
 
 
 # 17. Configurar fail2ban
 function config_fail2ban() {
     write_title "17. Finalizar configuración de fail2ban"
+    #la siguiente linea se elomina, si la funcion install_modevasive esta activa!!!!!!
+    echo -n " Indique e-mail para recibir alertas: "; read inbox
     sed s/MAILTO/$inbox/g templates/fail2ban > /etc/fail2ban/jail.local
     cp /etc/fail2ban/jail.local /etc/fail2ban/jail.conf
     /etc/init.d/fail2ban restart
@@ -263,15 +277,17 @@ function config_fail2ban() {
 # 18. Instalación de paquetes adicionales
 function install_aditional_packages() {
     write_title "18. Instalación de paquetes adicionales"
-    echo "18.1. Instalar Bazaar..........."; apt-get install bzr
+    # echo "18.1. Instalar Bazaar..........."; apt-get install bzr
     echo "18.2. Instalar tree............."; apt-get install tree
     echo "18.3. Instalar Python-MySQLdb..."; apt-get install python-mysqldb
-    echo "18.4. Instalar WSGI............."; apt-get install libapache2-mod-wsgi
+    # echo "18.4. Instalar WSGI............."; apt-get install libapache2-mod-wsgi
     echo "18.5. Instalar PIP.............."; apt-get install python-pip
-    echo "18.6. Instalar Vim.............."; apt-get install vim
+    # echo "18.6. Instalar Vim.............."; apt-get install vim
     echo "18.7. Instalar PHPUnit..........";
     pear config-set auto_discover 1
     pear install pear.phpunit.de/PHPUnit
+    echo "18.8. Instalar htop.............."; apt-get install htop
+
     say_done
 }
 

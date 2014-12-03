@@ -141,8 +141,9 @@ function install_fail2ban() {
     write_title "10. Instalar Sendmail y fail2ban"
     echo -n " ¿Quieres instalarlos? (y/n): "; read install_yep
     if [ "$install_yep" == "y" ]; then
-    apt-get install sendmail
-    apt-get install fail2ban
+        apt-get install sendmail
+        apt-get install fail2ban
+    fi
     say_done
 }
 
